@@ -1,5 +1,3 @@
 # MY TELEGRAM BOT, FOR INVOICE
 ## THE BOT IM CURRENT WORKING ON
-![](https://github.com/GabrielMendesdc/BOT_TELEGRAM/blob/main/Telegram-Logo.png)
-
-
+<img src="https://logodownload.org/wp-content/uploads/2017/11/telegram-logo.png" width="300" height="300" class="attachment-medium" alt="telegram-logo">
