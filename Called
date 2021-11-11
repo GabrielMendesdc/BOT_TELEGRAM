@@ -311,7 +311,7 @@ def preco(itens):
     return di
 
 
-def init(ean=0,mes=11,loja=['0','1','2','3','4','5','6'],idz='0',numero=0):
+def init(ean=0,mes=11,loja=['0','1','2','3','4','5','6'],idz='usuarioteste',numero=0):
     '''função de inicialização'''
     global listaforn
     try:
@@ -363,8 +363,7 @@ def init(ean=0,mes=11,loja=['0','1','2','3','4','5','6'],idz='0',numero=0):
             rooti = tree.getroot()
             listaforn = []
             di = preco(names(rooti))
-            print(listaforn)
-            lis.append(listaforn[k])
+            lis.append(listaforn[0])
             df = pd.DataFrame(di, columns=['DESCRICAO DO ITEM', 'PRECO'])
             pf = pd.DataFrame(columns = lis)
             dfi.export(pf, f'retorno/{idz}/nota{ki}.png')
@@ -390,3 +389,5 @@ def checkEan(ean):
         for linha in db:
             if linha[:13] == ean[:13]:
                 return linha[15:]
+            
+# init(60409075,loja=['4'])
