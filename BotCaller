@@ -4,7 +4,7 @@ import os
 import string
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import time
-chaveapi="2053709180:AAHLgSvVHdJoepE4ihQWVDmcNxyFFuoBd4o"
+chaveapi="HAHA MALUCO"
 
 bot = telebot.TeleBot(chaveapi)
 cnpjs,ljs = [],[]
@@ -35,7 +35,7 @@ def checkforn(forn = 'adep',ljs='0123456'):
     with open("cnpjs.txt", 'r') as db:
         for linha in db:
             if forn in linha.lower():
-                cnpj = linha[-20:]
+                cnpj = linha[-20:-9]
                 cnpj = ''.join([i for i in cnpj if i not in string.punctuation])
                 cnpjs.append(int(cnpj))
                 aux.append(linha)
