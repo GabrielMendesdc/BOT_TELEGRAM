@@ -35,29 +35,29 @@ def checkforn(forn = 'adep',ljs='0123456'):
     with open("cnpjs.txt", 'r') as db:
         for linha in db:
             if forn in linha.lower():
-                cnpj = linha[-20:-9]
+                cnpj = linha[-19:-9]
                 cnpj = ''.join([i for i in cnpj if i not in string.punctuation])
                 cnpjs.append(int(cnpj))
                 aux.append(linha)
                 k+=1
-                if achei:
+                if achei:    
                     perg = True
                 achei = True
-        if not achei:
-            bot.send_message(mensagemID, 'não achei esse fornecedor')
-            return 0
-        if perg:
-            if len(aux) == 8:
-                aux.append('fornecedor fantasma pra nao atrapalhar o sistema')
-            bot.send_message(mensagemID,"Escolha seu fornecedor: ", reply_markup = makeKeyboard(aux))
-            return 1
-        if achei and perg == False:
-            try:
-                init(int(cnpj),loja=ljs,idz=mensagemID)
-                envia(mensagemID)
-            except Exception as e:
-                print(e)
-                bot.send_message(mensagemID, 'não encontrei notas. desculpe, error :',e)
+    if not achei:
+        bot.send_message(mensagemID, 'não achei esse fornecedor')
+        return 0
+    if perg:
+        if len(aux) == 8:
+            aux.append('fornecedor fantasma pra nao atrapalhar o sistema')
+        bot.send_message(mensagemID,"Escolha seu fornecedor: ", reply_markup = makeKeyboard(aux))
+        return 1
+    if achei and perg == False:
+        try:
+            init(int(cnpj),loja=ljs,idz=mensagemID)
+            envia(mensagemID)
+        except Exception as e:
+            print(e)
+            bot.send_message(mensagemID, 'não encontrei notas. desculpe, error :',e)
 
 
 
@@ -66,7 +66,7 @@ def notas(mensagem):
     global forn,mensagemID,ljs
     ljs=[]
     mensagemID = mensagem.chat.id
-    forn = mensagem.text[7:]
+    forn = mensagem.text[7:]        
     lojas()
     
     
