@@ -116,7 +116,7 @@ def names(rooti):
     e fazer o tratamento de dados necessário'''
     listannf = []
     global qcx, px, pv, itens, resp, maximo, listaforn
-    nome, pf, x, utrib, bo, new, xnome, nnf, xfant, = '', 0, 0, '', False, '', '', '', ''
+    nome, pf, x, utrib, bo, new, nnf, xfant, = '', 0, 0, '', False, '', '', ''
     itens, fcp, ean, qcx, ucom, boc, dire, inf, jaSabe = [], 0, 0, 0, '', 0, '', '', False
     pv, ipi, icms, vprod, desc, qtrib, dia, cfop = 0, 0, 0, 0, 0, 0,'', ''
     for child in rooti.iter():
@@ -136,8 +136,6 @@ def names(rooti):
                 if child.text == 'MARSIL':
                     jaSabe = True
                     resp = 'marsil'
-            if child.tag[36:] == 'xNome':
-                xnome = child.text
             if child.tag[36:] == 'xProd':
                 ucom, utrib = '', ''
                 desc, icms, vprod, pf, ipi, fcp, qcx = 0, 0, 0, 0, 0, 0, 0
@@ -363,6 +361,8 @@ def init(ean=0,mes=11,loja=['0','1','2','3','4','5','6'],idz='usuarioteste',nume
             rooti = tree.getroot()
             listaforn = []
             di = preco(names(rooti))
+            if not listaforn:
+                listaforn.append('fornecedor')
             lis.append(listaforn[0])
             df = pd.DataFrame(di, columns=['DESCRICAO DO ITEM', 'PRECO'])
             pf = pd.DataFrame(columns = lis)
@@ -389,5 +389,3 @@ def checkEan(ean):
         for linha in db:
             if linha[:13] == ean[:13]:
                 return linha[15:]
-            
-# init(60409075,loja=['4'])
