@@ -98,9 +98,8 @@ def escolha(ucom, utrib, ean):
         return 'cx24utrib'
     elif ucom and utrib and ucom.lower() == utrib.lower() and ucom.isalpha() == False:
         return 'cx24ucom'
-    elif (
-            ut == 'un' or uti == 'und' or uti == 'uni' or ut == 'pc' or ut == 'fr' or ut == 'kg' or ut == 'qt' or ut == 'gr'
-            or uti == 'lat' or ut == 'lt' or ut == 'pa' or ut == 'cp' or ut == 'pt' or uti == 'pec'):
+    elif ut == 'un' or uti == 'und' or uti == 'uni' or ut == 'pc' or ut == 'fr' or ut == 'kg' or ut == 'qt' or ut == 'gr'\
+            or uti == 'lat' or ut == 'lt' or ut == 'pa' or ut == 'cp' or ut == 'pt' or uti == 'pec':
         return 'un'
     elif qcx and int(qcx) >= 2:
         qcx = int(digitos(qcx))
@@ -115,15 +114,15 @@ def names(rooti):
     '''Função para pegar as partes do xml
     e fazer o tratamento de dados necessário'''
     listannf = []
-    global qcx, px, pv, itens, resp, maximo, listaforn
+    global qcx, px, pv, itens, resp, maximo, listaforn, diaok
     nome, pf, x, utrib, bo, new, nnf, xfant, = '', 0, 0, '', False, '', '', ''
-    itens, fcp, ean, qcx, ucom, boc, dire, inf, jaSabe = [], 0, 0, 0, '', 0, '', '', False
+    listaforn, itens, fcp, ean, qcx, ucom, boc, dire, inf, jaSabe = [], [], 0, 0, 0, '', 0, '', '', False
     pv, ipi, icms, vprod, desc, qtrib, dia, cfop = 0, 0, 0, 0, 0, 0,'', ''
     for child in rooti.iter():
         bo = False
         try:
-            if child.tag[36:] == 'dhSaiEnt':
-                dia = child.text[:10]
+            if child.tag[36:] == 'dhSaiEnt' or child.tag[36:] == 'dhEmi':
+                dia = child.text
             if child.tag[36:] == 'nNF':
                 nnf = child.text
             if child.tag[36:] == 'xFant':
@@ -184,6 +183,7 @@ def names(rooti):
             if child.tag[36:] == 'infAdProd':
                 inf = child.text
             if child.tag[36:39] == 'det' or child.tag[36:] == 'total':
+                diaok = dia[8:10]+'/'+dia[5:7]+'/'+dia[:4]
                 bo = True if boc else False
                 boc = True
             if bo:
@@ -312,12 +312,13 @@ def preco(itens):
 def init(ean=0,mes=11,loja=['0','1','2','3','4','5','6'],idz='usuarioteste',numero=0):
     '''função de inicialização'''
     global listaforn
+    print(ean)
     try:
         os.mkdir(f'C:/Users/pdv/projetos_jupyter/retorno/{idz}')
     except:
         pass
     purgedir(f'C:/Users/pdv/projetos_jupyter/retorno/{idz}')
-    xmls,lista,lojas,lojitas,nnfs = [],[],[],[],[]
+    xmls,lista,lojitas,nnfs = [],[],[],[]
     cnpjs = ['05349537000185','07246178000166','08158815000105','32265622000138',
              '05349537000266','23017342000209','23017342000110']
     lojitas = [cnpjs[int(i)] for i in loja]
@@ -329,20 +330,6 @@ def init(ean=0,mes=11,loja=['0','1','2','3','4','5','6'],idz='usuarioteste',nume
             arq = [f for f in os.listdir(dire) if str(numero) in f]
         for i in arq:
             xmls.append({f'{cnpj}':i})
-            if cnpj == '05349537000185':
-                lojas.append('Guanabara - LJ1')
-            if cnpj == '07246178000166':
-                lojas.append('Primavera - LJ2')
-            if cnpj == '08158815000105':
-                lojas.append('Iguatemi - LJ3')
-            if cnpj == '32265622000138':
-                lojas.append('Flamboyant - LJ4')
-            if cnpj == '05349537000266':
-                lojas.append('São Paulo - LJ5')
-            if cnpj == '23017342000209':
-                lojas.append('Valinhos - LJ6')
-            if cnpj == '23017342000110':
-                lojas.append('Ouro Verde - LJ7')
     for k in xmls: 
         for c,v in k.items():
             if (numero and numero in v[25:34]) or ean:
@@ -354,16 +341,12 @@ def init(ean=0,mes=11,loja=['0','1','2','3','4','5','6'],idz='usuarioteste',nume
     for i in lista:
         lis = []
         try:
-            lis.append(forn.upper())
-            lis.append(lojas[k])
             lis.append(nnfs[k])
             tree = ET.parse(i)
             rooti = tree.getroot()
             listaforn = []
             di = preco(names(rooti))
-            if not listaforn:
-                listaforn.append('fornecedor')
-            lis.append(listaforn[0])
+            lis.append(diaok)
             df = pd.DataFrame(di, columns=['DESCRICAO DO ITEM', 'PRECO'])
             pf = pd.DataFrame(columns = lis)
             dfi.export(pf, f'retorno/{idz}/nota{ki}.png')
