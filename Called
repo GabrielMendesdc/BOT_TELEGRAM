@@ -217,9 +217,13 @@ def names(rooti):
                         else:
                             qcx = maluco(icms, desc, qtrib, vprod,
                                          fcp, ipi, dire='nda', x=int(y), nome=inf)
-                            pf = qcx[0]
-                            qcx = qcx[1]
-                            formato(nome, pf, ean, qcx, cfop)
+                            if not qcx == 'un':
+                                pf = qcx[0]
+                                qcx = qcx[1]
+                                formato(nome, pf, ean, qcx, cfop)
+                            else:
+                                pf = (vprod + icms - desc + fcp + ipi) / qtrib
+                                formato(nome, pf, ean, cfop)
                     elif dire == 'dir':
                         x = biel(nome)
                         p = maluco(icms, desc, qtrib, vprod, fcp, ipi, x, nome, dire="d")
@@ -312,7 +316,6 @@ def preco(itens):
 def init(ean=0,mes=11,loja=['0','1','2','3','4','5','6'],idz='usuarioteste',numero=0):
     '''função de inicialização'''
     global listaforn
-    print(ean)
     try:
         os.mkdir(f'C:/Users/pdv/projetos_jupyter/retorno/{idz}')
     except:
