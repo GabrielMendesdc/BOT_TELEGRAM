@@ -96,13 +96,11 @@ class Produto:
             self.info['boni'] = True
         del self.info['CFOP']
         qtd = self.preco_final()
-        print('qtd', self.info['xProd'], qtd)
         self.precifica(qtd)
 
     def precifica(self, qtd):
         if not qtd:
             qtd = 1
-        print('qtd = ', qtd, 'qTrib = ', self.info['qTrib'])
         qtd_final = float(qtd) * float(self.info['qTrib']) #Tambem * qCom
         set_poe_zero = {'vProd', 'vICMSST', 'vFCPST', 'vIPI', 'vDesc', 'infAdProd'}
         for i in set_poe_zero:
@@ -122,15 +120,15 @@ class Produto:
         print(self.info)
 
     def preco_final(self):
-        ean = checkean(self.info['cEANTrib'])
-        if ean:
-            print('cEANTrib', self.info['cEANTrib'])
-            return ean
-        else:
-            ean = checkean(self.info['cEAN'])
-            if ean:
-                print('cEAN', self.info['cEAN'])
-                return ean
+        # ean = checkean(self.info['cEANTrib'])
+        # if ean:
+        #     print('cEANTrib', self.info['cEANTrib'])
+        #     return ean
+        # else:
+        #     ean = checkean(self.info['cEAN'])
+        #     if ean:
+        #         print('cEAN', self.info['cEAN'])
+        #         return ean
 
         if self.info['xFant'] == 'MARSIL' or self.info['xFant'].startswith('NOVA CAMPINAS'):
             return pega_qtd_x(self.info['xProd'], self.info['xFant'])
@@ -143,16 +141,13 @@ class Produto:
 
         if self.info['uTrib'] == self.info['uCom'] and self.info['qTrib'] == self.info['qCom'] and \
            self.info['uTrib'].upper() == 'UN':
-            print('primeiro if', self.info['qTrib'])
             return 1
 
         if self.info['uTrib'] == self.info['uCom']:
             lista_res = [i for i in self.unidades if search(self.info['uTrib'], i.upper())]
             if lista_res:
-                print('gabriel', self.info['qTrib'])
                 return 1
         else:
-            print('else pega_qtd_cx')
             return pega_qtd_x(self.info['xProd'], self.info['xFant'])
 
 
@@ -203,15 +198,9 @@ def pega_qtd_x(string, xfant):
     direita = ''.join(i for i in direita)
     esquerda = ''.join(i for i in esquerda)
     if direita.isdigit() and direita.isdigit():
-        print('**** d', type(direita), direita, '/', type(esquerda), esquerda)
-        print('esq in string? ', esquerda in string)
-        print('dir in string? ', direita in string)
-
         if direita not in string and esquerda in string:
-            print('esq in string? ', esquerda in string)
             return direita
         elif esquerda not in string and direita in string:
-            print('dir in string? ', direita in string)
             return esquerda
         else:
             if float(direita) > float(esquerda):
@@ -219,12 +208,9 @@ def pega_qtd_x(string, xfant):
             else:
                 return esquerda
     if direita.isdigit():
-        print('direita', direita)
         return direita
     if esquerda.isdigit():
-        print('esquerda', esquerda)
         return esquerda
-    print(8 * '*', 'MALUCO NÃO PEGOU NADA')
     return 1
 
 
