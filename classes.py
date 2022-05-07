@@ -38,29 +38,28 @@ class Nota:
 
     def parser(self):
         prod = None
-        dicionario_nota = {'nNF': '', 'dhEmi': '', 'dhSaiEnt': '', 'xFant': ''}
+        set_nota = {'nNF', 'dhEmi', 'dhSaiEnt', 'xFant'}
 
-        dicionario_prod = {'xProd': '', 'CFOP': '', 'vProd': '', 'cEANTrib': '', 'cEAN': '', 'uCom': '', 'uTrib': '',
-                           'qCom': '', 'qTrib': '', 'vDesc': '', 'vICMSST': '', 'vFCPST': '', 'vIPI': '',
-                           'infAdProd': ''}
+        set_prod = {'xProd', 'CFOP', 'vProd', 'cEANTrib', 'cEAN', 'uCom', 'uTrib', 'qCom',
+                    'qTrib', 'vDesc', 'vICMSST', 'vFCPST', 'vIPI', 'infAdProd'}
 
         zeros = {'0.0', '0.00', '0.000'}
         for i in self.caminho:
             arvore = ET.parse(i)
             raiz = arvore.getroot()
             for filho in raiz.iter():
-                if filho.tag[36:] in dicionario_nota.keys():
+                if filho.tag[36:] in set_nota:
                     self.info[filho.tag[36:]] = filho.text
                 if filho.tag[36:] == 'det':
                     digitos = filho.attrib['nItem']
                     if prod:
                         prod.cfop()
                         self.produtos.append(prod)
-                    prod = Produto(digitos)
+                    prod = Produto(digitos, self.info['xFant'])
                 if filho.tag[36:] == 'total':
                     prod.cfop()
                     self.produtos.append(prod)
-                if filho.tag[36:] in dicionario_prod.keys():
+                if filho.tag[36:] in set_prod:
                     if filho.text and filho.text not in zeros:
                         prod.info[filho.tag[36:]] = filho.text
                 # self.produtos.append()
@@ -68,9 +67,9 @@ class Nota:
 
 
 class Produto:
-    def __init__(self, index):
+    def __init__(self, index, xfant):
         self.index = index
-        self.info = {}
+        self.info = {'xFant': xfant}
         self.lista_boni = {'5910', '5911', '5912', '5912', '5913', '5914', '5915', '5916', '5917', '5918', '5919',
                            '1201', '1202', '1203', '1204', '1208', '1209', '1212', '1410', '1411', '1503', '1504',
                            '1505', '1506', '1553', '1660', '1661', '1662', '1918', '1919', '2201', '2202', '2203',
@@ -96,29 +95,65 @@ class Produto:
         if self.info['CFOP'] in self.lista_boni:
             self.info['boni'] = True
         del self.info['CFOP']
-        print(self.preco_final())
+        qtd = self.preco_final()
+        print('qtd', self.info['xProd'], qtd)
+        self.precifica(qtd)
+
+    def precifica(self, qtd):
+        if not qtd:
+            qtd = 1
+        print('qtd = ', qtd, 'qTrib = ', self.info['qTrib'])
+        qtd_final = float(qtd) * float(self.info['qTrib']) #Tambem * qCom
+        set_poe_zero = {'vProd', 'vICMSST', 'vFCPST', 'vIPI', 'vDesc', 'infAdProd'}
+        for i in set_poe_zero:
+            if i not in self.info.keys():
+                self.info[i] = 0
+            else:
+                try:
+                    self.info[i] = float(self.info[i])
+                except ValueError:
+                    pass
+        self.info['preco'] = (float(self.info['vProd'] + self.info['vICMSST'] + self.info['vFCPST']
+                    + self.info['vIPI'] - self.info['vDesc']) / qtd_final)
+        exclusao = {'xFant', 'cEANTrib', 'cEAN', 'uCom', 'uTrib', 'qCom', 'qTrib', 'vProd',
+                    'vIPI', 'vFCPST', 'vICMSST', 'vDesc', 'infAdProd'}
+        for i in exclusao:
+            del self.info[i]
+        print(self.info)
 
     def preco_final(self):
-        print(self.info)
         ean = checkean(self.info['cEANTrib'])
         if ean:
+            print('cEANTrib', self.info['cEANTrib'])
             return ean
         else:
             ean = checkean(self.info['cEAN'])
             if ean:
+                print('cEAN', self.info['cEAN'])
                 return ean
 
-        if self.info['uTrib'] == self.info['uCom'] and not self.info['uTrib'].isalpha():
-            return self.info['qTrib']
+        if self.info['xFant'] == 'MARSIL' or self.info['xFant'].startswith('NOVA CAMPINAS'):
+            return pega_qtd_x(self.info['xProd'], self.info['xFant'])
 
-        elif self.info['uTrib'] == self.info['uCom'] and not self.info['uCom'].isalpha():
-            return self.info['qCom']
+        # if self.info['uTrib'] == self.info['uCom'] and not self.info['uTrib'].isalpha():
+            # return self.info['qTrib']
 
-        lista_res = [i for i in self.unidades if search(self.info['uTrib'], i.upper())]
-        if lista_res:
-            return self.info['qTrib']
+        # elif self.info['uTrib'] == self.info['uCom'] and not self.info['uCom'].isalpha():
+        #     return self.info['qCom']
+
+        if self.info['uTrib'] == self.info['uCom'] and self.info['qTrib'] == self.info['qCom'] and \
+           self.info['uTrib'].upper() == 'UN':
+            print('primeiro if', self.info['qTrib'])
+            return 1
+
+        if self.info['uTrib'] == self.info['uCom']:
+            lista_res = [i for i in self.unidades if search(self.info['uTrib'], i.upper())]
+            if lista_res:
+                print('gabriel', self.info['qTrib'])
+                return 1
         else:
-            return maluco(self.info['xProd'])
+            print('else pega_qtd_cx')
+            return pega_qtd_x(self.info['xProd'], self.info['xFant'])
 
 
 def busca_xmls(cnpj, mes, loja, numero):
@@ -147,11 +182,18 @@ def checkean(ean):
                 return linha[15:]
 
 
-def maluco(string):
+def pega_qtd_x(string, xfant):
     esquerda = []
     direita = []
     passei = False
-    for i in string.split(' ')[-1].lower():
+    padrao = string.split(' ')[-1].lower()
+    string = ''.join(string.split(' ')[0:-1])
+
+    if xfant == 'MARSIL':
+        padrao = [i.lower() for i in string.split(' ') if 'x' in i.lower()][0]
+        if padrao.startswith('cx'):
+            return int(''.join(i for i in padrao if i.isdigit()))
+    for i in padrao:
         if i != 'x' and not passei:
             esquerda.append(i)
         if i == 'x':
@@ -160,9 +202,27 @@ def maluco(string):
             direita.append(i)
     direita = ''.join(i for i in direita)
     esquerda = ''.join(i for i in esquerda)
+    if direita.isdigit() and direita.isdigit():
+        print('**** d', type(direita), direita, '/', type(esquerda), esquerda)
+        print('esq in string? ', esquerda in string)
+        print('dir in string? ', direita in string)
+
+        if direita not in string and esquerda in string:
+            print('esq in string? ', esquerda in string)
+            return direita
+        elif esquerda not in string and direita in string:
+            print('dir in string? ', direita in string)
+            return esquerda
+        else:
+            if float(direita) > float(esquerda):
+                return direita
+            else:
+                return esquerda
     if direita.isdigit():
+        print('direita', direita)
         return direita
     if esquerda.isdigit():
+        print('esquerda', esquerda)
         return esquerda
     print(8 * '*', 'MALUCO NÃO PEGOU NADA')
     return 1
@@ -179,6 +239,6 @@ def init(id_, cnpj, mes, loja, numero=0):
     return True
 
 
-x = init('teste', '33019177000', '04', [1, 2, 3, 4, 5, 6, 7])
+x = init('teste', '14450629', '05', [1, 2])
 if not x:
     print('sem notas')
