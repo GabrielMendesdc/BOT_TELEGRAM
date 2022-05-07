@@ -111,8 +111,8 @@ class Produto:
                     self.info[i] = float(self.info[i])
                 except ValueError:
                     pass
-        self.info['preco'] = (float(self.info['vProd'] + self.info['vICMSST'] + self.info['vFCPST']
-                    + self.info['vIPI'] - self.info['vDesc']) / qtd_final)
+        self.info['preco'] = round((float(self.info['vProd'] + self.info['vICMSST'] + self.info['vFCPST']
+                    + self.info['vIPI'] - self.info['vDesc']) / qtd_final), 2)
         exclusao = {'xFant', 'cEANTrib', 'cEAN', 'uCom', 'uTrib', 'qCom', 'qTrib', 'vProd',
                     'vIPI', 'vFCPST', 'vICMSST', 'vDesc', 'infAdProd'}
         for i in exclusao:
@@ -134,7 +134,7 @@ class Produto:
             return pega_qtd_x(self.info['xProd'], self.info['xFant'])
 
         # if self.info['uTrib'] == self.info['uCom'] and not self.info['uTrib'].isalpha():
-            # return self.info['qTrib']
+            # return self.info['qTrib'] #ex: CX24, cx36...
 
         # elif self.info['uTrib'] == self.info['uCom'] and not self.info['uCom'].isalpha():
         #     return self.info['qCom']
