@@ -111,8 +111,17 @@ class Produto:
                     self.info[i] = float(self.info[i])
                 except ValueError:
                     pass
-        self.info['preco'] = round((float(self.info['vProd'] + self.info['vICMSST'] + self.info['vFCPST']
-                    + self.info['vIPI'] - self.info['vDesc']) / qtd_final), 2)
+        x = False
+        try:
+            x = self.info['boni']
+        except KeyError:
+            pass
+        if not x:
+            self.info['preco'] = round((float(self.info['vProd'] + self.info['vICMSST'] + self.info['vFCPST']
+                        + self.info['vIPI'] - self.info['vDesc']) / qtd_final), 2)
+        else:
+            self.info['preco'] = 'boni'
+            del self.info['boni']
         exclusao = {'xFant', 'cEANTrib', 'cEAN', 'uCom', 'uTrib', 'qCom', 'qTrib', 'vProd',
                     'vIPI', 'vFCPST', 'vICMSST', 'vDesc', 'infAdProd'}
         for i in exclusao:
@@ -133,12 +142,6 @@ class Produto:
         if self.info['xFant'] == 'MARSIL' or self.info['xFant'].startswith('NOVA CAMPINAS'):
             return pega_qtd_x(self.info['xProd'], self.info['xFant'])
 
-        # if self.info['uTrib'] == self.info['uCom'] and not self.info['uTrib'].isalpha():
-            # return self.info['qTrib'] #ex: CX24, cx36...
-
-        # elif self.info['uTrib'] == self.info['uCom'] and not self.info['uCom'].isalpha():
-        #     return self.info['qCom']
-
         if self.info['uTrib'] == self.info['uCom'] and self.info['qTrib'] == self.info['qCom'] and \
            self.info['uTrib'].upper() == 'UN':
             return 1
@@ -147,6 +150,16 @@ class Produto:
             lista_res = [i for i in self.unidades if search(self.info['uTrib'], i.upper())]
             if lista_res:
                 return 1
+
+        if self.info['uTrib'] == self.info['uCom']:
+            if not self.info['uTrib'].isalpha():
+                print(apenas_digitos(self.info['uTrib']))
+                return apenas_digitos(self.info['uTrib']) #ex: CX24, cx36...
+
+            if not self.info['uCom'].isalpha():
+                print(apenas_digitos(self.info['uCom']))
+                return apenas_digitos(self.info['uCom']) #ex: CX24, cx36...
+
         else:
             return pega_qtd_x(self.info['xProd'], self.info['xFant'])
 
@@ -214,6 +227,9 @@ def pega_qtd_x(string, xfant):
     return 1
 
 
+def apenas_digitos(string):
+    return ''.join([i for i in string if i.isdigit()])
+
 def init(id_, cnpj, mes, loja, numero=0):
     usuario = User(id_)
     notas = busca_xmls(cnpj, mes, loja, numero)
@@ -225,6 +241,6 @@ def init(id_, cnpj, mes, loja, numero=0):
     return True
 
 
-x = init('teste', '14450629', '05', [1, 2])
+x = init('teste', '71689228', '05', [2])
 if not x:
     print('sem notas')
