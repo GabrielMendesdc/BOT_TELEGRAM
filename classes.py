@@ -1,3 +1,4 @@
+import re
 from os import listdir, path
 import xml.etree.ElementTree as ET
 from re import search
@@ -32,6 +33,7 @@ class Nota:
             if self.loja == k:
                 self.loja = v
         self.parser()
+        print(self.produtos)
 
     def __repr__(self):
         return f'Nota de número: {self.caminho[-23:-14]}'
@@ -51,25 +53,31 @@ class Nota:
                 if filho.tag[36:] in set_nota:
                     self.info[filho.tag[36:]] = filho.text
                 if filho.tag[36:] == 'det':
-                    digitos = filho.attrib['nItem']
+                    indice = filho.attrib['nItem']
                     if prod:
                         prod.cfop()
                         self.produtos.append(prod)
-                    prod = Produto(digitos, self.info['xFant'])
+                    if 'xNome' not in self.info.keys():
+                        prod = Produto(indice, self.info['xFant'])
+                    else:
+                        prod = Produto(indice, self.info['xFant'], self.info['xNome'])
                 if filho.tag[36:] == 'total':
                     prod.cfop()
                     self.produtos.append(prod)
+                    break
                 if filho.tag[36:] in set_prod:
                     if filho.text and filho.text not in zeros:
                         prod.info[filho.tag[36:]] = filho.text
+                if filho.tag[36:] == 'xNome' and 'xNome' not in self.info.keys():
+                    print(filho.text)
+                    self.info['xNome'] = filho.text
                 # self.produtos.append()
-        # print(self.produtos)
 
 
 class Produto:
-    def __init__(self, index, xfant):
+    def __init__(self, index, xfant, xnome=''):
         self.index = index
-        self.info = {'xFant': xfant}
+        self.info = {'xFant': xfant, 'xNome': xnome}
         self.lista_boni = {'5910', '5911', '5912', '5912', '5913', '5914', '5915', '5916', '5917', '5918', '5919',
                            '1201', '1202', '1203', '1204', '1208', '1209', '1212', '1410', '1411', '1503', '1504',
                            '1505', '1506', '1553', '1660', '1661', '1662', '1918', '1919', '2201', '2202', '2203',
@@ -122,11 +130,12 @@ class Produto:
         else:
             self.info['preco'] = 'boni'
             del self.info['boni']
-        exclusao = {'xFant', 'cEANTrib', 'cEAN', 'uCom', 'uTrib', 'qCom', 'qTrib', 'vProd',
-                    'vIPI', 'vFCPST', 'vICMSST', 'vDesc', 'infAdProd'}
+        exclusao = {'xFant', 'xNome', 'cEANTrib', 'cEAN', 'uCom', 'uTrib', 'qCom',
+                    'qTrib', 'vProd', 'vIPI', 'vFCPST', 'vICMSST', 'vDesc', 'infAdProd'}
+        # print('vou excluir: ', self.info)
         for i in exclusao:
             del self.info[i]
-        print(self.info)
+        # print('** excluido: ', self.info)
 
     def preco_final(self):
         # ean = checkean(self.info['cEANTrib'])
@@ -138,6 +147,11 @@ class Produto:
         #     if ean:
         #         print('cEAN', self.info['cEAN'])
         #         return ean
+        if self.info['xNome'].startswith('LOURENCO'):
+            return pega_qtd_x(self.info['xProd'], self.info['xFant'], '/')
+
+        if self.info['xNome'].startswith('Ambev') or self.info['xNome'].startswith('Nestle'):
+            return 1
 
         if self.info['xFant'] == 'MARSIL' or self.info['xFant'].startswith('NOVA CAMPINAS'):
             return pega_qtd_x(self.info['xProd'], self.info['xFant'])
@@ -151,17 +165,13 @@ class Produto:
             if lista_res:
                 return 1
 
-        if self.info['uTrib'] == self.info['uCom']:
             if not self.info['uTrib'].isalpha():
-                print(apenas_digitos(self.info['uTrib']))
                 return apenas_digitos(self.info['uTrib']) #ex: CX24, cx36...
 
             if not self.info['uCom'].isalpha():
-                print(apenas_digitos(self.info['uCom']))
                 return apenas_digitos(self.info['uCom']) #ex: CX24, cx36...
 
-        else:
-            return pega_qtd_x(self.info['xProd'], self.info['xFant'])
+        return pega_qtd_x(self.info['xProd'], self.info['xFant'])
 
 
 def busca_xmls(cnpj, mes, loja, numero):
@@ -190,45 +200,75 @@ def checkean(ean):
                 return linha[15:]
 
 
-def pega_qtd_x(string, xfant):
+def pega_qtd_x(string, xfant, letra='x'):
     esquerda = []
     direita = []
     passei = False
+    reg = r"COM \d+ UN"
+    resultados = re.search(reg, string)
+    if resultados:
+        return apenas_digitos(resultados.group(0))
     padrao = string.split(' ')[-1].lower()
-    string = ''.join(string.split(' ')[0:-1])
+    if letra not in padrao:
+        lista = string.split(' ')
+        print('LISTAAAAA = ', lista)
+        for i in range(len(lista)):
+            if lista[i].upper() == letra.upper():
+                padrao = (''.join(lista[i - 1:i + 2])).lower()
+                string = ''.join(lista[0:i - 1])
+                string.join(lista[i + 2:])
+                print(lista[i - 1:i + 2])
+                print(string)
+                break
+            elif letra.upper() in lista[i].upper():
+                padrao = lista[i].lower()
+                string = lista[0:i]
+
+    else:
+        string = ''.join(string.split(' ')[0:-1])
 
     if xfant == 'MARSIL':
         padrao = [i.lower() for i in string.split(' ') if 'x' in i.lower()][0]
         if padrao.startswith('cx'):
             return int(''.join(i for i in padrao if i.isdigit()))
+    print('padrao: ', padrao, type(padrao))
     for i in padrao:
-        if i != 'x' and not passei:
+        if i != letra and not passei:
             esquerda.append(i)
-        if i == 'x':
+        if i == letra:
             passei = True
-        if passei and i != 'x':
+        if passei and i != letra:
             direita.append(i)
+    print(padrao)
     direita = ''.join(i for i in direita)
     esquerda = ''.join(i for i in esquerda)
-    if direita.isdigit() and direita.isdigit():
+    print('Direita: ', direita, 'Esquerda: ', esquerda)
+    if direita.isdigit() and esquerda.isdigit():
         if direita not in string and esquerda in string:
+            print('direita')
             return direita
         elif esquerda not in string and direita in string:
+            print('esquerda')
             return esquerda
         else:
             if float(direita) > float(esquerda):
+                print('direita')
                 return direita
             else:
+                print('esquerda')
                 return esquerda
     if direita.isdigit():
+        print('direita')
         return direita
     if esquerda.isdigit():
+        print('esquerda')
         return esquerda
     return 1
 
 
 def apenas_digitos(string):
     return ''.join([i for i in string if i.isdigit()])
+
 
 def init(id_, cnpj, mes, loja, numero=0):
     usuario = User(id_)
@@ -241,6 +281,6 @@ def init(id_, cnpj, mes, loja, numero=0):
     return True
 
 
-x = init('teste', '71689228', '05', [2])
+x = init('teste', '0946074', '05', [2])
 if not x:
     print('sem notas')
