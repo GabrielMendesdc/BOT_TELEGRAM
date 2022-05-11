@@ -11,8 +11,9 @@ class User:
 
     def add_notas(self, nota):
         if nota and type(list()) == type(nota):
-            for n in nota:
-                self.notas.append(Nota(n))
+            for lista in nota:
+                for xml in lista:
+                    self.notas.append(Nota(xml))
         elif nota and type(str()) == type(nota):
             self.notas.append(Nota(nota))
 
@@ -29,11 +30,12 @@ class Nota:
         self.info = {}
         self.produtos = []
         self.loja = caminho[-71:-57]
+        print(self.loja)
         for k, v in nome_lojas.items():
             if self.loja == k:
                 self.loja = v
         self.parser()
-        print(self.produtos)
+        self.organiza()
 
     def __repr__(self):
         return f'Nota de número: {self.caminho[-23:-14]}'
@@ -46,32 +48,41 @@ class Nota:
                     'qTrib', 'vDesc', 'vICMSST', 'vFCPST', 'vIPI', 'infAdProd'}
 
         zeros = {'0.0', '0.00', '0.000'}
-        for i in self.caminho:
-            arvore = ET.parse(i)
-            raiz = arvore.getroot()
-            for filho in raiz.iter():
-                if filho.tag[36:] in set_nota:
-                    self.info[filho.tag[36:]] = filho.text
-                if filho.tag[36:] == 'det':
-                    indice = filho.attrib['nItem']
-                    if prod:
-                        prod.cfop()
-                        self.produtos.append(prod)
-                    if 'xNome' not in self.info.keys():
-                        prod = Produto(indice, self.info['xFant'])
-                    else:
-                        prod = Produto(indice, self.info['xFant'], self.info['xNome'])
-                if filho.tag[36:] == 'total':
+        print('caminho:  ', self.caminho)
+        arvore = ET.parse(self.caminho)
+        raiz = arvore.getroot()
+        for filho in raiz.iter():
+            if filho.tag[36:] in set_nota:
+                self.info[filho.tag[36:]] = filho.text
+            if filho.tag[36:] == 'det':
+                indice = int(filho.attrib['nItem'])-1
+                if prod:
                     prod.cfop()
                     self.produtos.append(prod)
-                    break
-                if filho.tag[36:] in set_prod:
-                    if filho.text and filho.text not in zeros:
-                        prod.info[filho.tag[36:]] = filho.text
-                if filho.tag[36:] == 'xNome' and 'xNome' not in self.info.keys():
-                    print(filho.text)
-                    self.info['xNome'] = filho.text
-                # self.produtos.append()
+                if 'xNome' not in self.info.keys():
+                    prod = Produto(indice, self.info['xFant'])
+                else:
+                    prod = Produto(indice, self.info['xFant'], self.info['xNome'])
+            if filho.tag[36:] == 'total':
+                prod.cfop()
+                self.produtos.append(prod)
+                break
+            if filho.tag[36:] in set_prod:
+                if filho.text and filho.text not in zeros:
+                    prod.info[filho.tag[36:]] = filho.text
+            if filho.tag[36:] == 'xNome' and 'xNome' not in self.info.keys():
+                self.info['xNome'] = filho.text
+
+    def organiza(self):
+        retorno = []
+        aux = []
+        for i in self.produtos:
+            if i.info['preco'] == 'boni':
+                retorno.append(i.info)
+            else:
+                aux.append(i.info)
+        print(retorno + sorted(aux, key= lambda x: x['preco']))
+
 
 
 class Produto:
@@ -92,7 +103,7 @@ class Produto:
                          'grs', 'lat', 'lt', 'pa', 'cp', 'pt', 'pec'}
 
     def __repr__(self):
-        return f'ID {self.index} info: {self.info}\n'
+        return f'ID {self.index} info: {self.info}'
 
     def cfop(self):
         try:
@@ -182,7 +193,6 @@ def busca_xmls(cnpj, mes, loja, numero):
     arq = []
     for lj in ljs:
         dire = path.join('N:\\', 'XML ENTRADA', 'destinadas', lj, f'2022-{mes}')
-        print(dire)
         if cnpj:
             arq.append([path.join(dire, f) for f in listdir(dire) if str(cnpj) in f])
         else:
@@ -211,14 +221,11 @@ def pega_qtd_x(string, xfant, letra='x'):
     padrao = string.split(' ')[-1].lower()
     if letra not in padrao:
         lista = string.split(' ')
-        print('LISTAAAAA = ', lista)
         for i in range(len(lista)):
             if lista[i].upper() == letra.upper():
                 padrao = (''.join(lista[i - 1:i + 2])).lower()
                 string = ''.join(lista[0:i - 1])
                 string.join(lista[i + 2:])
-                print(lista[i - 1:i + 2])
-                print(string)
                 break
             elif letra.upper() in lista[i].upper():
                 padrao = lista[i].lower()
@@ -231,7 +238,6 @@ def pega_qtd_x(string, xfant, letra='x'):
         padrao = [i.lower() for i in string.split(' ') if 'x' in i.lower()][0]
         if padrao.startswith('cx'):
             return int(''.join(i for i in padrao if i.isdigit()))
-    print('padrao: ', padrao, type(padrao))
     for i in padrao:
         if i != letra and not passei:
             esquerda.append(i)
@@ -239,29 +245,21 @@ def pega_qtd_x(string, xfant, letra='x'):
             passei = True
         if passei and i != letra:
             direita.append(i)
-    print(padrao)
     direita = ''.join(i for i in direita)
     esquerda = ''.join(i for i in esquerda)
-    print('Direita: ', direita, 'Esquerda: ', esquerda)
     if direita.isdigit() and esquerda.isdigit():
         if direita not in string and esquerda in string:
-            print('direita')
             return direita
         elif esquerda not in string and direita in string:
-            print('esquerda')
             return esquerda
         else:
             if float(direita) > float(esquerda):
-                print('direita')
                 return direita
             else:
-                print('esquerda')
                 return esquerda
     if direita.isdigit():
-        print('direita')
         return direita
     if esquerda.isdigit():
-        print('esquerda')
         return esquerda
     return 1
 
@@ -275,12 +273,10 @@ def init(id_, cnpj, mes, loja, numero=0):
     notas = busca_xmls(cnpj, mes, loja, numero)
     if not notas:
         return None
-    print(notas)
     usuario.add_notas(notas)
-
     return True
 
 
-x = init('teste', '0946074', '05', [2])
+x = init('teste', '71689228', '05', [2])
 if not x:
     print('sem notas')
