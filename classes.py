@@ -59,6 +59,8 @@ class Nota:
                 if prod:
                     prod.cfop()
                     self.produtos.append(prod)
+                if 'xFant' not in self.info.keys():
+                    self.info['xFant'] = 'Sem xFant'
                 if 'xNome' not in self.info.keys():
                     prod = Produto(indice, self.info['xFant'])
                 else:
@@ -81,8 +83,8 @@ class Nota:
                 retorno.append(i.info)
             else:
                 aux.append(i.info)
-        print(retorno + sorted(aux, key= lambda x: x['preco']))
-
+        for i in retorno + sorted(aux, key= lambda x: x['preco']):
+            print(i)
 
 
 class Produto:
@@ -120,7 +122,7 @@ class Produto:
     def precifica(self, qtd):
         if not qtd:
             qtd = 1
-        qtd_final = float(qtd) * float(self.info['qTrib']) #Tambem * qCom
+        qtd_final = float(qtd) * float(self.info['qTrib'])  #* self.info['qCom'] Tambem * qCom
         set_poe_zero = {'vProd', 'vICMSST', 'vFCPST', 'vIPI', 'vDesc', 'infAdProd'}
         for i in set_poe_zero:
             if i not in self.info.keys():
@@ -161,7 +163,7 @@ class Produto:
         if self.info['xNome'].startswith('LOURENCO'):
             return pega_qtd_x(self.info['xProd'], self.info['xFant'], '/')
 
-        if self.info['xNome'].startswith('Ambev') or self.info['xNome'].startswith('Nestle'):
+        if self.info['xNome'].startswith('Ambev') or self.info['xNome'].startswith('Nestle') or self.info['xNome'].startswith('AVEC'):
             return 1
 
         if self.info['xFant'] == 'MARSIL' or self.info['xFant'].startswith('NOVA CAMPINAS'):
@@ -219,7 +221,7 @@ def pega_qtd_x(string, xfant, letra='x'):
     if resultados:
         return apenas_digitos(resultados.group(0))
     padrao = string.split(' ')[-1].lower()
-    if letra not in padrao:
+    if letra not in padrao and xfant != 'MARSIL':
         lista = string.split(' ')
         for i in range(len(lista)):
             if lista[i].upper() == letra.upper():
@@ -248,11 +250,15 @@ def pega_qtd_x(string, xfant, letra='x'):
     direita = ''.join(i for i in direita)
     esquerda = ''.join(i for i in esquerda)
     if direita.isdigit() and esquerda.isdigit():
+        print('ambos digitos', string)
         if direita not in string and esquerda in string:
+            print(esquerda, 'esquerda na string: ', string)
             return direita
         elif esquerda not in string and direita in string:
+            print(direita, 'direita na string: ', string)
             return esquerda
         else:
+            print('else')
             if float(direita) > float(esquerda):
                 return direita
             else:
@@ -271,12 +277,13 @@ def apenas_digitos(string):
 def init(id_, cnpj, mes, loja, numero=0):
     usuario = User(id_)
     notas = busca_xmls(cnpj, mes, loja, numero)
+    print(notas)
     if not notas:
         return None
     usuario.add_notas(notas)
     return True
 
 
-x = init('teste', '71689228', '05', [2])
+x = init('teste', '13746308', '05', [5])
 if not x:
     print('sem notas')
